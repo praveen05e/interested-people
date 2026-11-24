@@ -1,4 +1,5 @@
 import type { UserProfile, RegistrationResult } from '../types'
+import { detectCountry } from './country'
 
 // ── Google Identity Services types ──────────────────────────
 declare global {
@@ -32,7 +33,6 @@ export function loadGoogleIdentityServices(): Promise<void> {
     return Promise.resolve()
   }
   return new Promise((resolve, reject) => {
-    // If script already in DOM, don't duplicate
     if (document.querySelector('script[src*="accounts.google.com/gsi/client"]')) {
       gisLoaded = true
       resolve()
@@ -49,7 +49,6 @@ export function loadGoogleIdentityServices(): Promise<void> {
 }
 
 // ── Sign in with Google (OAuth2 Token Client popup) ───────────
-// This is the most reliable method for button-click sign in
 export function signInWithGoogle(clientId: string): Promise<UserProfile | null> {
   return new Promise((resolve) => {
     try {
@@ -59,43 +58,72 @@ export function signInWithGoogle(clientId: string): Promise<UserProfile | null> 
         return
       }
 
+      let resolved = false
+      const safeResolve = (val: UserProfile | null) => {
+        if (!resolved) {
+          resolved = true
+          window.removeEventListener('focus', onWindowFocus)
+          clearTimeout(timeoutId)
+          resolve(val)
+        }
+      }
+
+      // If user closes the popup without completing, Google does not fire error_callback.
+      // Listening for window regain focus allows us to detect when the popup was dismissed.
+      const onWindowFocus = () => {
+        setTimeout(() => {
+          if (!resolved) {
+            safeResolve(null)
+          }
+        }, 1200)
+      }
+      window.addEventListener('focus', onWindowFocus, { once: true })
+
+      // Safety fallback: if no interaction after 45 seconds, reset state
+      const timeoutId = setTimeout(() => {
+        safeResolve(null)
+      }, 45000)
+
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'email profile openid',
         callback: async (tokenResponse) => {
           if (!tokenResponse.access_token || tokenResponse.error) {
-            console.warn('Google sign-in cancelled or failed', tokenResponse.error)
-            resolve(null)
+            console.warn('Google sign-in cancelled or failed:', tokenResponse.error)
+            safeResolve(null)
             return
           }
 
           try {
-            // Fetch verified user profile directly with access token
+            // Fetch verified user profile with access token
             const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
             })
 
             if (!res.ok) {
-              resolve(null)
+              safeResolve(null)
               return
             }
 
             const data = await res.json()
+            const country = await detectCountry()
+
             const profile: UserProfile = {
               id: data.sub,
               email: data.email,
               full_name: data.name || data.email.split('@')[0],
               avatar_url: data.picture,
+              country,
             }
-            resolve(profile)
+            safeResolve(profile)
           } catch (err) {
             console.error('Failed to fetch user profile:', err)
-            resolve(null)
+            safeResolve(null)
           }
         },
         error_callback: (err) => {
           console.error('OAuth token client error:', err)
-          resolve(null)
+          safeResolve(null)
         },
       })
 
@@ -124,9 +152,13 @@ export async function submitToSheet(
     hour12: false,
   })
 
+  // Ensure country is resolved
+  const country = user.country || (await detectCountry())
+
   const payload = {
     fullName: user.full_name,
     email: user.email.toLowerCase().trim(),
+    country,
     registeredAt,
   }
 

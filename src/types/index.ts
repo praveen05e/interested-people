@@ -3,6 +3,7 @@ export interface UserProfile {
   email: string
   full_name: string
   avatar_url?: string
+  country?: string
 }
 
 export type RegistrationStatus =

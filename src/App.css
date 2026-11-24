@@ -271,6 +271,82 @@ body {
 }
 
 /* =========================================================
+   ALTERNATIVE EMAIL (Hotmail, Outlook, Yahoo, etc.)
+   ========================================================= */
+.hero__alt-toggle {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.45);
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  transition: color var(--transition);
+  margin-top: 0.25rem;
+}
+
+.hero__alt-toggle:hover {
+  color: rgba(255, 255, 255, 0.85);
+  text-decoration: underline;
+}
+
+.hero__alt-form {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 0.5rem;
+  animation: fadeIn 0.3s ease both;
+}
+
+.hero__alt-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  padding: 0.75rem 1rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.hero__alt-input:focus {
+  border-color: #FF4D00;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.hero__alt-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.hero__alt-btn {
+  background: #FF4D00;
+  color: #FFFFFF;
+  border: none;
+  padding: 0.75rem 1.25rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity var(--transition), transform var(--transition);
+}
+
+.hero__alt-btn:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.hero__alt-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
    ERROR & CANCEL STATES
    ========================================================= */
 .hero__error {

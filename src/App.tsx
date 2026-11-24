@@ -73,19 +73,40 @@ export default function App() {
       }
     }
 
-    // Show Google One-Tap / sign-in prompt
-    const profile = await signInWithGoogle(GOOGLE_CLIENT_ID)
+    // Show Google account chooser prompt
+    try {
+      const profile = await signInWithGoogle(GOOGLE_CLIENT_ID)
 
-    if (!profile) {
-      // User cancelled or One-Tap not available
-      setStatus('cancelled')
+      if (!profile) {
+        // User closed the popup or cancelled
+        setStatus('idle')
+        isProcessingRef.current = false
+        return
+      }
+
+      setUser(profile)
+      await doRegistration(profile)
+    } catch {
+      setStatus('error')
+      setErrorMessage('Google sign-in could not be completed. Please try again.')
       isProcessingRef.current = false
-      return
+    }
+  }, [user, status, doRegistration])
+
+  const handleManualEmailSubmit = useCallback(async (email: string) => {
+    if (isProcessingRef.current) return
+    isProcessingRef.current = true
+    setErrorMessage('')
+
+    const profile: UserProfile = {
+      id: 'email_' + Date.now(),
+      email: email.trim(),
+      full_name: email.split('@')[0],
     }
 
     setUser(profile)
     await doRegistration(profile)
-  }, [user, status, doRegistration])
+  }, [doRegistration])
 
   const handleRetry = useCallback(() => {
     setStatus('idle')
@@ -99,6 +120,7 @@ export default function App() {
         status={status}
         user={user}
         onInterestClick={handleInterestClick}
+        onManualEmailSubmit={handleManualEmailSubmit}
         onRetry={handleRetry}
         errorMessage={errorMessage}
       />
