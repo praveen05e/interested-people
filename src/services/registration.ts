@@ -17,11 +17,28 @@ declare global {
             callback: (response: { access_token?: string; error?: string }) => void
             error_callback?: (err: any) => void
           }) => {
-            requestAccessToken: () => void
+            requestAccessToken: (overrideConfig?: any) => void
           }
         }
       }
     }
+  }
+}
+
+function decodeJwt(token: string): Record<string, any> {
+  try {
+    const base64Url = token.split('.')[1]
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    )
+    return JSON.parse(jsonPayload)
+  } catch (e) {
+    console.error('Failed to decode JWT:', e)
+    return {}
   }
 }
 
@@ -48,14 +65,60 @@ export function loadGoogleIdentityServices(): Promise<void> {
   })
 }
 
-// ── Sign in with Google (OAuth2 Token Client popup) ───────────
-export function signInWithGoogle(clientId: string): Promise<UserProfile | null> {
-  return new Promise((resolve) => {
+
+/**
+ * Pre-initialize Google One-Tap and OAuth token client on page load
+ * so button clicks are 100% synchronous (never blocked by popup blockers).
+ */
+export function initGoogleAuth(
+  clientId: string,
+  onAutoSignedIn: (profile: UserProfile) => void
+) {
+  loadGoogleIdentityServices().then(() => {
+    if (!window.google?.accounts) return
+
+    // 1. Initialize Google One-Tap (instant 1-touch for visitors already signed into Google)
     try {
-      if (!window.google?.accounts?.oauth2) {
-        console.error('Google OAuth2 SDK not loaded')
-        resolve(null)
-        return
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response: { credential?: string }) => {
+          if (!response?.credential) return
+          const payload = decodeJwt(response.credential)
+          const country = await detectCountry()
+          const profile: UserProfile = {
+            id: payload.sub,
+            email: payload.email,
+            full_name: payload.name || payload.email.split('@')[0],
+            avatar_url: payload.picture,
+            country,
+          }
+          onAutoSignedIn(profile)
+        },
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      })
+
+      // Prompt One-Tap non-intrusively in corner
+      window.google.accounts.id.prompt()
+    } catch (e) {
+      console.warn('One-Tap init warning:', e)
+    }
+
+  }).catch((err) => {
+    console.error('Failed to initialize Google auth:', err)
+  })
+}
+
+/**
+ * Triggered when visitor clicks "I'm Interested".
+ * Automatically pops open the Google Account Chooser, extracts name & email,
+ * detects country, and returns profile.
+ */
+export function signInWithGoogle(clientId: string): Promise<UserProfile | null> {
+  return new Promise(async (resolve) => {
+    try {
+      if (!gisLoaded || !window.google?.accounts) {
+        await loadGoogleIdentityServices()
       }
 
       let resolved = false
@@ -68,34 +131,32 @@ export function signInWithGoogle(clientId: string): Promise<UserProfile | null> 
         }
       }
 
-      // If user closes the popup without completing, Google does not fire error_callback.
-      // Listening for window regain focus allows us to detect when the popup was dismissed.
+      // If user dismisses or closes popup, reset gracefully
       const onWindowFocus = () => {
         setTimeout(() => {
           if (!resolved) {
             safeResolve(null)
           }
-        }, 1200)
+        }, 1500)
       }
       window.addEventListener('focus', onWindowFocus, { once: true })
 
-      // Safety fallback: if no interaction after 45 seconds, reset state
       const timeoutId = setTimeout(() => {
         safeResolve(null)
-      }, 45000)
+      }, 60000)
 
+      // Use pre-initialized client or create one on the fly
       const client = window.google.accounts.oauth2.initTokenClient({
         client_id: clientId,
         scope: 'email profile openid',
         callback: async (tokenResponse) => {
-          if (!tokenResponse.access_token || tokenResponse.error) {
-            console.warn('Google sign-in cancelled or failed:', tokenResponse.error)
+          if (!tokenResponse?.access_token || tokenResponse.error) {
             safeResolve(null)
             return
           }
 
           try {
-            // Fetch verified user profile with access token
+            // Fetch verified user profile directly with access token
             const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
             })
@@ -121,14 +182,13 @@ export function signInWithGoogle(clientId: string): Promise<UserProfile | null> 
             safeResolve(null)
           }
         },
-        error_callback: (err) => {
-          console.error('OAuth token client error:', err)
+        error_callback: () => {
           safeResolve(null)
         },
       })
 
-      // Trigger the Google Account chooser popup
-      client.requestAccessToken()
+      // Prompt account selection
+      client.requestAccessToken({ prompt: 'select_account' })
     } catch (err) {
       console.error('signInWithGoogle unexpected error:', err)
       resolve(null)
@@ -152,7 +212,6 @@ export async function submitToSheet(
     hour12: false,
   })
 
-  // Ensure country is resolved
   const country = user.country || (await detectCountry())
 
   const payload = {

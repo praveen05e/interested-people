@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import type { RegistrationStatus, UserProfile } from '../types'
 import InterestButton from './InterestButton'
 
@@ -6,7 +5,6 @@ interface HeroSectionProps {
   status: RegistrationStatus
   user: UserProfile | null
   onInterestClick: () => void
-  onManualEmailSubmit: (email: string) => void
   onRetry: () => void
   errorMessage: string
 }
@@ -15,20 +13,10 @@ export default function HeroSection({
   status,
   user,
   onInterestClick,
-  onManualEmailSubmit,
   onRetry,
   errorMessage,
 }: HeroSectionProps) {
   const isConfirmed = status === 'success' || status === 'already_registered'
-  const [showEmailInput, setShowEmailInput] = useState(false)
-  const [manualEmail, setManualEmail] = useState('')
-
-  const handleEmailFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (manualEmail.trim() && manualEmail.includes('@')) {
-      onManualEmailSubmit(manualEmail.trim())
-    }
-  }
 
   return (
     <main className="hero">
@@ -62,40 +50,10 @@ export default function HeroSection({
             : "We're exploring something new. Be among the first to know when it arrives."}
         </p>
 
-        {/* CTA — hidden after confirmed */}
+        {/* Single-Click Interest Button — zero manual typing */}
         {!isConfirmed && (
           <div className="hero__cta">
             <InterestButton status={status} onClick={onInterestClick} />
-
-            {/* Alternative for Hotmail, Outlook, Yahoo, and other email accounts */}
-            {!showEmailInput ? (
-              <button
-                type="button"
-                className="hero__alt-toggle"
-                onClick={() => setShowEmailInput(true)}
-              >
-                Using Hotmail, Outlook or Yahoo? Join with email →
-              </button>
-            ) : (
-              <form className="hero__alt-form" onSubmit={handleEmailFormSubmit}>
-                <input
-                  type="email"
-                  className="hero__alt-input"
-                  placeholder="name@hotmail.com or yahoo.com"
-                  value={manualEmail}
-                  onChange={(e) => setManualEmail(e.target.value)}
-                  required
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="hero__alt-btn"
-                  disabled={status === 'submitting'}
-                >
-                  {status === 'submitting' ? '…' : 'Join'}
-                </button>
-              </form>
-            )}
 
             {status === 'error' && (
               <div className="hero__error">
@@ -122,7 +80,7 @@ export default function HeroSection({
         {/* Subtle user hint while submitting */}
         {user && !isConfirmed && (
           <p className="hero__user-hint">
-            Signing in as <span>{user.email}</span>
+            Signed in as <span>{user.email}</span>
           </p>
         )}
       </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import {
-  loadGoogleIdentityServices,
+  initGoogleAuth,
   signInWithGoogle,
   submitToSheet,
 } from './services/registration'
@@ -17,14 +17,6 @@ export default function App() {
   const [status, setStatus] = useState<RegistrationStatus>('idle')
   const [errorMessage, setErrorMessage] = useState('')
   const isProcessingRef = useRef(false)
-  const gisReadyRef = useRef(false)
-
-  // Preload Google Identity Services on mount
-  useEffect(() => {
-    loadGoogleIdentityServices()
-      .then(() => { gisReadyRef.current = true })
-      .catch(() => { /* Will retry on click */ })
-  }, [])
 
   const doRegistration = useCallback(async (profile: UserProfile) => {
     setStatus('submitting')
@@ -46,13 +38,25 @@ export default function App() {
     }
   }, [])
 
+  // Pre-initialize Google authentication on mount
+  useEffect(() => {
+    initGoogleAuth(GOOGLE_CLIENT_ID, (profile: UserProfile) => {
+      // 1-touch auto registration via Google One-Tap
+      if (!isProcessingRef.current && status !== 'success' && status !== 'already_registered') {
+        isProcessingRef.current = true
+        setUser(profile)
+        doRegistration(profile)
+      }
+    })
+  }, [status, doRegistration])
+
+  // Single-touch click on "I'm Interested"
   const handleInterestClick = useCallback(async () => {
     if (isProcessingRef.current) return
     if (status === 'success' || status === 'already_registered') return
     isProcessingRef.current = true
     setErrorMessage('')
 
-    // If already signed in, go straight to submit
     if (user) {
       await doRegistration(user)
       return
@@ -60,20 +64,6 @@ export default function App() {
 
     setStatus('authenticating')
 
-    // Ensure GIS is loaded
-    if (!gisReadyRef.current) {
-      try {
-        await loadGoogleIdentityServices()
-        gisReadyRef.current = true
-      } catch {
-        setStatus('error')
-        setErrorMessage('Could not load Google Sign-In. Please refresh and try again.')
-        isProcessingRef.current = false
-        return
-      }
-    }
-
-    // Show Google account chooser prompt
     try {
       const profile = await signInWithGoogle(GOOGLE_CLIENT_ID)
 
@@ -93,21 +83,6 @@ export default function App() {
     }
   }, [user, status, doRegistration])
 
-  const handleManualEmailSubmit = useCallback(async (email: string) => {
-    if (isProcessingRef.current) return
-    isProcessingRef.current = true
-    setErrorMessage('')
-
-    const profile: UserProfile = {
-      id: 'email_' + Date.now(),
-      email: email.trim(),
-      full_name: email.split('@')[0],
-    }
-
-    setUser(profile)
-    await doRegistration(profile)
-  }, [doRegistration])
-
   const handleRetry = useCallback(() => {
     setStatus('idle')
     setErrorMessage('')
@@ -120,7 +95,6 @@ export default function App() {
         status={status}
         user={user}
         onInterestClick={handleInterestClick}
-        onManualEmailSubmit={handleManualEmailSubmit}
         onRetry={handleRetry}
         errorMessage={errorMessage}
       />
