@@ -144,8 +144,8 @@ body {
   font-size: 18.4px;
   font-weight: 400;
   color: #FF4D00;
-  letter-spacing: 0.08em;
-  text-transform: none;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
   filter: drop-shadow(0 0 12px rgba(255, 77, 0, 0.2));
 }
 

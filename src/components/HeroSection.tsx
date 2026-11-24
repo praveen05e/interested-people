@@ -25,8 +25,8 @@ export default function HeroSection({
       <div className="hero__content">
         {/* Wordmark & Brand Logo */}
         <div className="hero__brand">
-          <img src="/logo.png" alt="ztoi Tech Logo" className="hero__logo" />
-          <span className="logo-text">ztoi Tech</span>
+          <img src="/logo.png" alt="ZTOI TECH Logo" className="hero__logo" />
+          <span className="logo-text">ZTOI TECH</span>
         </div>
 
         {/* Eyebrow */}
