@@ -115,84 +115,86 @@ export function initGoogleAuth(
  * detects country, and returns profile.
  */
 export function signInWithGoogle(clientId: string): Promise<UserProfile | null> {
-  return new Promise(async (resolve) => {
-    try {
-      if (!gisLoaded || !window.google?.accounts) {
-        await loadGoogleIdentityServices()
-      }
-
-      let resolved = false
-      const safeResolve = (val: UserProfile | null) => {
-        if (!resolved) {
-          resolved = true
-          window.removeEventListener('focus', onWindowFocus)
-          clearTimeout(timeoutId)
-          resolve(val)
+  return new Promise((resolve) => {
+    (async () => {
+      try {
+        if (!gisLoaded || !window.google?.accounts) {
+          await loadGoogleIdentityServices()
         }
-      }
 
-      // If user dismisses or closes popup, reset gracefully
-      const onWindowFocus = () => {
-        setTimeout(() => {
+        let resolved = false
+        const safeResolve = (val: UserProfile | null) => {
           if (!resolved) {
-            safeResolve(null)
+            resolved = true
+            window.removeEventListener('focus', onWindowFocus)
+            clearTimeout(timeoutId)
+            resolve(val)
           }
-        }, 1500)
-      }
-      window.addEventListener('focus', onWindowFocus, { once: true })
+        }
 
-      const timeoutId = setTimeout(() => {
-        safeResolve(null)
-      }, 60000)
+        // If user dismisses or closes popup, reset gracefully
+        const onWindowFocus = () => {
+          setTimeout(() => {
+            if (!resolved) {
+              safeResolve(null)
+            }
+          }, 1500)
+        }
+        window.addEventListener('focus', onWindowFocus, { once: true })
 
-      // Use pre-initialized client or create one on the fly
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'email profile openid',
-        callback: async (tokenResponse) => {
-          if (!tokenResponse?.access_token || tokenResponse.error) {
-            safeResolve(null)
-            return
-          }
+        const timeoutId = setTimeout(() => {
+          safeResolve(null)
+        }, 60000)
 
-          try {
-            // Fetch verified user profile directly with access token
-            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-            })
-
-            if (!res.ok) {
+        // Use pre-initialized client or create one on the fly
+        const client = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'email profile openid',
+          callback: async (tokenResponse) => {
+            if (!tokenResponse?.access_token || tokenResponse.error) {
               safeResolve(null)
               return
             }
 
-            const data = await res.json()
-            const country = await detectCountry()
+            try {
+              // Fetch verified user profile directly with access token
+              const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+                headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+              })
 
-            const profile: UserProfile = {
-              id: data.sub,
-              email: data.email,
-              full_name: data.name || data.email.split('@')[0],
-              avatar_url: data.picture,
-              country,
+              if (!res.ok) {
+                safeResolve(null)
+                return
+              }
+
+              const data = await res.json()
+              const country = await detectCountry()
+
+              const profile: UserProfile = {
+                id: data.sub,
+                email: data.email,
+                full_name: data.name || data.email.split('@')[0],
+                avatar_url: data.picture,
+                country,
+              }
+              safeResolve(profile)
+            } catch (err) {
+              console.error('Failed to fetch user profile:', err)
+              safeResolve(null)
             }
-            safeResolve(profile)
-          } catch (err) {
-            console.error('Failed to fetch user profile:', err)
+          },
+          error_callback: () => {
             safeResolve(null)
-          }
-        },
-        error_callback: () => {
-          safeResolve(null)
-        },
-      })
+          },
+        })
 
-      // Prompt account selection
-      client.requestAccessToken({ prompt: 'select_account' })
-    } catch (err) {
-      console.error('signInWithGoogle unexpected error:', err)
-      resolve(null)
-    }
+        // Prompt account selection
+        client.requestAccessToken({ prompt: 'select_account' })
+      } catch (err) {
+        console.error('signInWithGoogle unexpected error:', err)
+        resolve(null)
+      }
+    })()
   })
 }
 
