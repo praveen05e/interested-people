@@ -1,0 +1,427 @@
+/* =========================================================
+   GLOBAL RESET & BASE
+   ========================================================= */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --black:      #000000;
+  --white:      #FFFFFF;
+  --off-white:  #F7F7F5;
+  --light-grey: #E8E8E8;
+  --dark-grey:  #333333;
+  --mid-grey:   #888888;
+
+  --font-serif: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans:  'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html {
+  font-size: 16px;
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--black);
+  color: var(--white);
+  line-height: 1.6;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* =========================================================
+   APP SHELL
+   ========================================================= */
+.app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+/* =========================================================
+   HERO SECTION
+   ========================================================= */
+.hero {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  overflow: hidden;
+  background-color: var(--black);
+
+  /* Editorial background — premium fashion editorial image with dark overlay */
+  background-image:
+    linear-gradient(
+      160deg,
+      rgba(0,0,0,0.88) 0%,
+      rgba(0,0,0,0.65) 40%,
+      rgba(0,0,0,0.88) 100%
+    ),
+    url('/src/assets/hero.png');
+  background-size: cover, cover;
+  background-position: center, center;
+}
+
+/* Subtle vertical line decoration */
+.hero::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(255,255,255,0.06) 20%,
+    rgba(255,255,255,0.06) 80%,
+    transparent 100%
+  );
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 40%,
+    rgba(255,255,255,0.03) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.hero__content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 2rem 1.5rem 4rem;
+  max-width: 640px;
+  width: 100%;
+}
+
+/* =========================================================
+   BRAND & LOGO
+   ========================================================= */
+.hero__brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+}
+
+.hero__logo {
+  width: 52px;
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 10px rgba(255, 77, 0, 0.35));
+  transition: transform var(--transition);
+}
+
+.hero__logo:hover {
+  transform: scale(1.05);
+}
+
+.logo-text,
+.hero__wordmark-text {
+  font-family: 'Michroma', sans-serif;
+  font-size: 18.4px;
+  font-weight: 400;
+  color: #FF4D00;
+  letter-spacing: 0.08em;
+  text-transform: none;
+  filter: drop-shadow(0 0 12px rgba(255, 77, 0, 0.2));
+}
+
+/* =========================================================
+   EYEBROW
+   ========================================================= */
+.hero__eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 1.5rem;
+}
+
+/* =========================================================
+   HEADLINE
+   ========================================================= */
+.hero__headline {
+  font-family: var(--font-serif);
+  font-size: clamp(2.75rem, 8vw, 5.5rem);
+  font-weight: 400;
+  line-height: 1.08;
+  letter-spacing: -0.01em;
+  color: var(--white);
+  margin-bottom: 1.75rem;
+}
+
+/* =========================================================
+   SUBTEXT
+   ========================================================= */
+.hero__subtext {
+  font-family: var(--font-sans);
+  font-size: clamp(0.875rem, 2vw, 1rem);
+  font-weight: 300;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.55);
+  max-width: 400px;
+  margin-bottom: 3rem;
+}
+
+/* =========================================================
+   CTA AREA
+   ========================================================= */
+.hero__cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+/* =========================================================
+   INTEREST BUTTON
+   ========================================================= */
+.interest-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1rem 2.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--black);
+  background: var(--white);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    transform var(--transition),
+    box-shadow var(--transition);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  min-width: 220px;
+  min-height: 54px;
+  position: relative;
+  overflow: hidden;
+}
+
+.interest-btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255,255,255,0);
+  transition: background var(--transition);
+}
+
+.interest-btn:hover:not(:disabled) {
+  background: var(--off-white);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(255,255,255,0.12);
+}
+
+.interest-btn:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.interest-btn:disabled {
+  opacity: 0.75;
+  cursor: not-allowed;
+}
+
+.interest-btn--loading {
+  color: var(--dark-grey);
+  background: var(--light-grey);
+}
+
+.interest-btn__spinner {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.interest-btn__label {
+  position: relative;
+  z-index: 1;
+}
+
+/* =========================================================
+   ERROR & CANCEL STATES
+   ========================================================= */
+.hero__error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.625rem;
+  text-align: center;
+}
+
+.hero__error-text {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.5);
+  line-height: 1.5;
+  max-width: 320px;
+}
+
+.hero__retry-btn {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.6);
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  padding: 0.125rem 0;
+  transition: color var(--transition), border-color var(--transition);
+}
+
+.hero__retry-btn:hover {
+  color: var(--white);
+  border-color: var(--white);
+}
+
+.hero__cancel-text {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.4);
+  line-height: 1.5;
+  max-width: 320px;
+  text-align: center;
+}
+
+/* =========================================================
+   SUCCESS ICON
+   ========================================================= */
+.hero__success-icon {
+  margin-top: 2rem;
+  color: rgba(255,255,255,0.6);
+  animation: fadeInUp 0.6s ease both;
+}
+
+/* =========================================================
+   USER HINT
+   ========================================================= */
+.hero__user-hint {
+  margin-top: 1.5rem;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.3);
+  letter-spacing: 0.03em;
+}
+
+.hero__user-hint span {
+  color: rgba(255,255,255,0.5);
+}
+
+/* =========================================================
+   STATUS BANNER
+   ========================================================= */
+.status-banner {
+  padding: 1rem 1.5rem;
+  background: rgba(255,255,255,0.04);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  text-align: center;
+  animation: fadeIn 0.4s ease both;
+}
+
+.status-banner p {
+  font-size: 0.8125rem;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 0.05em;
+}
+
+/* =========================================================
+   PRIVACY FOOTER
+   ========================================================= */
+.privacy {
+  padding: 1.5rem 1.5rem 2rem;
+  text-align: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+
+.privacy__text {
+  font-size: 0.6875rem;
+  line-height: 1.65;
+  color: rgba(255,255,255,0.22);
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* =========================================================
+   ANIMATIONS
+   ========================================================= */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* =========================================================
+   GOOGLE FONTS — loaded via index.html
+   ========================================================= */
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width: 480px) {
+  .hero__content {
+    padding: 1.5rem 1.25rem 3.5rem;
+  }
+
+  .hero__wordmark {
+    margin-bottom: 2.5rem;
+  }
+
+  .hero__subtext {
+    margin-bottom: 2.25rem;
+  }
+
+  .interest-btn {
+    width: 100%;
+    max-width: 320px;
+    padding: 1.0625rem 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero__content {
+    padding: 3rem 2rem 5rem;
+  }
+}
+
+/* Touch-friendly tap targets */
+@media (pointer: coarse) {
+  .interest-btn {
+    min-height: 58px;
+  }
+}
